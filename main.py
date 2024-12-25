@@ -77,7 +77,7 @@ if __name__ == '__main__':
     preprocessed_data = save_load_data.load_data()
 
     errors_F1 = [[] for _ in tops]
-    without_pair = [0] * len(tops)
+    without_pair = [[] for _ in tops]
 
     for k in range(1):
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(24, 16))
@@ -115,12 +115,13 @@ if __name__ == '__main__':
             if len(docsPoints) == 0:
                 break
 
-            matches, not_pair = eval_delineation(docsPoints, result)
+            treshold = 0.6
+            matches, not_pair = eval_delineation(docsPoints, result, treshold)
             if matches == -1 and not_pair == -1:
                 break
 
             errors_F1[i].extend(matches)
-            without_pair[i] += not_pair
+            without_pair[i].append(not_pair)
 
     # Вычисление F1 и среднего
     F1_array = calculate_F1(errors_F1, without_pair)

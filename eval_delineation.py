@@ -7,16 +7,42 @@ class Pair:
         self.predPoint = predPoint
 
 
-def eval_delineation(true_signal, our_signal):
+def processing_signal(result, start, threshold):
+    maximum_x = []
+    maximum_y = []
+    indexes = []
+
+    for i in range(len(result)-1):
+        if result[i] > threshold:
+            maximum_y.append(result[i])
+            maximum_x.append(i)
+
+            # plt.plot(i, result[i], 'ob', markersize = 4)
+
+            if result[i + 1] < threshold or (i+1 == len(result)-1):
+                if result[i+1] > threshold:
+                    maximum_y.append(result[i])
+                    maximum_x.append(i)
+
+                max_point_y = max(maximum_y)
+                max_point_x = maximum_x[maximum_y.index(max_point_y)]
+                point = Point(max_point_x + start, max_point_y)
+                indexes.append(point)
+                maximum_x.clear()
+                maximum_y.clear()
+
+    return indexes
+
+def eval_delineation(true_signal, our_signal, threshold):
     radius = 50
-    threshold = 0.8
+    # threshold = 0.8
 
     if len(true_signal) == 0:
         return -1, -1
 
     our_signal = np.array(our_signal)
     indices = np.where(our_signal >= threshold)[0]  # Индексы, где сигнал >= threshold
-    not_pair = len(indices)
+    not_pair = true_signal[:] # создаем копию списка
 
     matches = []
     used_indices = set()
@@ -26,8 +52,9 @@ def eval_delineation(true_signal, our_signal):
         end = min(len(our_signal), point.x + radius // 2)
 
         # Используем NumPy для фильтрации индексов в диапазоне
-        valid_indices = indices[(indices >= start) & (indices < end)]
-        pairs = [Point(i, our_signal[i]) for i in valid_indices]
+        # valid_indices = indices[(indices >= start) & (indices < end)]
+        pairs = processing_signal(our_signal[start:end], start, threshold)
+        # pairs = [Point(i.x, our_signal[i.x]) for i in valid_points]
 
         if pairs:
             # Убираем уже использованные индексы
@@ -37,7 +64,7 @@ def eval_delineation(true_signal, our_signal):
                 # Находим ближайший с помощью NumPy
                 closest = find_close(point, pairs)
                 used_indices.add(closest.x)  # Отмечаем индекс как использованный
-                not_pair -= 1
+                del_pair(point, not_pair)
                 matches.append(Pair(point, closest))
             else:
                 matches.append(None)
@@ -52,4 +79,11 @@ def find_close(p, pairs):
     values = np.array([obj.x for obj in pairs])
     index = (np.abs(values - p.x)).argmin()
     return pairs[index]
+
+def del_pair(point, not_pair):
+    for i, p in enumerate(not_pair):
+        if p.x == point.x and p.y == point.y:
+            del not_pair[i]
+    return not_pair
+
 
